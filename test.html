@@ -6,37 +6,37 @@
   <script src="https://unpkg.com/@zxing/browser@latest"></script>
 </head>
 <body>
-  <h1>Escanear Código de Barras 0.03</h1>
+  <h1>Escanear Código</h1>
   <video id="video" width="300" height="200" style="border: 1px solid gray"></video>
-  <p>Resultado!: <span id="result"></span></p>
+  <p>Resultado: <span id="result"></span></p>
 
   <script>
-    window.addEventListener('load', function () {
-      const codeReader = new ZXing.BrowserMultiFormatReader();
-      const videoElement = document.getElementById('video');
-      const resultElement = document.getElementById('result');
+    window.addEventListener('DOMContentLoaded', async () => {
+      const video = document.getElementById('video');
+      const resultText = document.getElementById('result');
 
-      // Obtener los dispositivos de video disponibles
-      codeReader.listVideoInputDevices()
-        .then((videoInputDevices) => {
-          // Seleccionar el primer dispositivo disponible (puede ajustarse según necesidad)
-          const selectedDeviceId = videoInputDevices[0].deviceId;
+      try {
+        const devices = await ZXing.BrowserMultiFormatReader.listVideoInputDevices();
 
-          // Iniciar la decodificación desde el dispositivo de video seleccionado
-          codeReader.decodeFromVideoDevice(selectedDeviceId, videoElement, (result, err) => {
-            if (result) {
-              // Mostrar el resultado cuando se detecta un código
-              resultElement.textContent = result.text;
-              console.log(result);
-            }
-            if (err && !(err instanceof ZXing.NotFoundException)) {
-              console.error(err);
-            }
-          });
-        })
-        .catch((err) => {
-          console.error(err);
+        if (devices.length === 0) {
+          alert("No se detectaron cámaras.");
+          return;
+        }
+
+        const selectedDeviceId = devices[0].deviceId;
+
+        const codeReader = new ZXing.BrowserMultiFormatReader();
+        await codeReader.decodeFromVideoDevice(selectedDeviceId, video, (result, error) => {
+          if (result) {
+            resultText.textContent = result.getText();
+          }
         });
+
+        console.log("Escaneo iniciado.");
+      } catch (error) {
+        console.error("Error al acceder a la cámara:", error);
+        alert("No se pudo acceder a la cámara. Asegurate de que el navegador tenga permisos.");
+      }
     });
   </script>
 </body>
