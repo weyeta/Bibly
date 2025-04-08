@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Escanear código</title>
+  </head>
+  <body>
+    <h2>Escaneá un código de barras</h2>
+    <video id="preview" width="300" height="200"></video>
+    <p><strong>Resultado:</strong> <span id="output"></span></p>
+
+    <script type="module">
+      import { BrowserMultiFormatReader } from "https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.1/+esm";
+
+      const codeReader = new BrowserMultiFormatReader();
+      const videoElement = document.getElementById("preview");
+      const output = document.getElementById("output");
+
+      codeReader.decodeFromVideoDevice(null, videoElement, (result, err) => {
+        if (result) {
+          output.textContent = result.getText();
+          codeReader.reset(); // para detener después de primer lectura
+        }
+      });
+    </script>
+  </body>
+</html>
