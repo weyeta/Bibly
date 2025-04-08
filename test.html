@@ -2,13 +2,14 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Escanear con cámara elegida</title>
+  <title>Escáner con selección de cámara</title>
 </head>
 <body>
-  <h2>Elegí una cámara</h2>
-  <ul id="camera-list"></ul>
+  <h2>Escaneá un código</h2>
 
-  <h2>Escáner</h2>
+  <label for="cameraSelect">Seleccioná la cámara:</label>
+  <select id="cameraSelect"></select>
+
   <video id="preview" width="300" height="200" autoplay></video>
   <p><strong>Resultado:</strong> <span id="output"></span></p>
 
@@ -17,53 +18,56 @@
 
     const videoElement = document.getElementById('preview');
     const output = document.getElementById('output');
-    const listElement = document.getElementById('camera-list');
+    const cameraSelect = document.getElementById('cameraSelect');
     const codeReader = new BrowserMultiFormatReader();
 
-    async function listarCamaras() {
+    let currentDeviceId = null;
+
+    async function init() {
       try {
-        // Necesario para que los labels estén disponibles
+        // Pedimos permisos al usuario
         await navigator.mediaDevices.getUserMedia({ video: true });
+
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+
+        cameraSelect.innerHTML = ''; // limpiamos por si recarga
+
+        videoDevices.forEach((device, index) => {
+          const option = document.createElement('option');
+          option.value = device.deviceId;
+          option.text = device.label || `Cámara ${index + 1}`;
+          cameraSelect.appendChild(option);
+        });
+
+        if (videoDevices.length > 0) {
+          currentDeviceId = videoDevices[0].deviceId;
+          startScanner(currentDeviceId);
+        }
       } catch (err) {
-        alert("Tenés que permitir acceso a la cámara.");
-        return;
+        alert('No se pudo acceder a la cámara.');
+        console.error(err);
       }
-
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = devices.filter(device => device.kind === 'videoinput');
-
-      if (videoDevices.length === 0) {
-        listElement.innerHTML = '<li>No se encontraron cámaras</li>';
-        return;
-      }
-
-      videoDevices.forEach((device, index) => {
-        const li = document.createElement('li');
-        li.textContent = `Cámara ${index + 1}: ${device.label || 'Sin nombre'} — ID: ${device.deviceId}`;
-
-        const btn = document.createElement('button');
-        btn.textContent = 'Usar esta';
-        btn.onclick = () => iniciarEscaneo(device.deviceId);
-
-        li.appendChild(document.createElement('br'));
-        li.appendChild(btn);
-        listElement.appendChild(li);
-      });
     }
 
-    function iniciarEscaneo(deviceId) {
+    function startScanner(deviceId) {
       output.textContent = '';
-      codeReader.reset(); // Detiene escaneo anterior
+      codeReader.reset(); // Detenemos escaneo previo
 
       codeReader.decodeFromVideoDevice(deviceId, videoElement, (result, err) => {
         if (result) {
           output.textContent = result.getText();
-          codeReader.reset(); // Detener después de primer lectura
+          codeReader.reset();
         }
       });
     }
 
-    listarCamaras();
+    cameraSelect.addEventListener('change', (e) => {
+      currentDeviceId = e.target.value;
+      startScanner(currentDeviceId);
+    });
+
+    init();
   </script>
 </body>
 </html>
