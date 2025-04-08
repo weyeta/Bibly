@@ -1,47 +1,56 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>Escanear código</title>
+  <meta charset="UTF-8">
+  <title>Escáner automático</title>
 </head>
 <body>
-  <h2>Escaneá un código de barras 0.05</h2>
-  <video id="preview" width="800" height="600" autoplay></video>
+  <h2>Escanear código de barras</h2>
+  <video id="preview" autoplay></video>
   <p><strong>Resultado:</strong> <span id="output"></span></p>
 
   <script type="module">
     import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.1/+esm';
 
     const codeReader = new BrowserMultiFormatReader();
-
     const videoElement = document.getElementById('preview');
     const output = document.getElementById('output');
 
-    const constraints = {
-      video: {
-        facingMode: 'environment', // cámara trasera
-        width: { ideal: 1920 },
-        height: { ideal: 1080 },
-        focusMode: 'continuous', // algunos navegadores lo aceptan
-        advanced: [
-          { focusMode: 'continuous' }
-        ]
-      }
+    const getBestCameraId = async () => {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter(device => device.kind === 'videoinput');
+
+      // Intentar encontrar una cámara trasera que NO diga "wide"
+      const backCams = videoDevices.filter(device =>
+        /back|rear/i.test(device.label) && !/wide|ultrawide/i.test(device.label)
+      );
+
+      // Si encontramos una trasera sin wide, la usamos. Si no, usamos la primera trasera.
+      if (backCams.length > 0) return backCams[0].deviceId;
+
+      const anyBack = videoDevices.find(device => /back|rear/i.test(device.label));
+      if (anyBack) return anyBack.deviceId;
+
+      // Si no hay pistas, usamos la primera cámara
+      return videoDevices[0]?.deviceId || null;
     };
 
-    // Solicitamos directamente el stream con constraints
-    navigator.mediaDevices.getUserMedia(constraints).then(stream => {
-      videoElement.srcObject = stream;
-      codeReader.decodeFromVideoElement(videoElement, (result, err) => {
+    const initScanner = async () => {
+      const bestDeviceId = await getBestCameraId();
+      if (!bestDeviceId) {
+        alert('No se pudo encontrar una cámara disponible.');
+        return;
+      }
+
+      codeReader.decodeFromVideoDevice(bestDeviceId, videoElement, (result, err) => {
         if (result) {
           output.textContent = result.getText();
-          codeReader.reset();
-          stream.getTracks().forEach(track => track.stop()); // apagamos la cámara
+          codeReader.reset(); // detener luego de leer
         }
       });
-    }).catch(err => {
-      console.error('Error accediendo a la cámara:', err);
-    });
+    };
+
+    initScanner();
   </script>
 </body>
 </html>
