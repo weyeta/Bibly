@@ -16,58 +16,54 @@
   <script type="module">
     import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.1/+esm';
 
+    const codeReader = new BrowserMultiFormatReader();
     const videoElement = document.getElementById('preview');
     const output = document.getElementById('output');
     const cameraSelect = document.getElementById('cameraSelect');
-    const codeReader = new BrowserMultiFormatReader();
 
-    let currentDeviceId = null;
+    let currentStream = null;
+    let scanning = false;
 
-    async function init() {
+    async function getCameras() {
       try {
-        // Pedimos permisos al usuario
-        await navigator.mediaDevices.getUserMedia({ video: true });
+        // Primero pedimos permisos usando una cámara genérica
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        stream.getTracks().forEach(track => track.stop()); // Cerramos la previa
 
         const devices = await navigator.mediaDevices.enumerateDevices();
-        const videoDevices = devices.filter(device => device.kind === 'videoinput');
-
-        cameraSelect.innerHTML = ''; // limpiamos por si recarga
-
-        videoDevices.forEach((device, index) => {
-          const option = document.createElement('option');
-          option.value = device.deviceId;
-          option.text = device.label || `Cámara ${index + 1}`;
-          cameraSelect.appendChild(option);
-        });
-
-        if (videoDevices.length > 0) {
-          currentDeviceId = videoDevices[0].deviceId;
-          startScanner(currentDeviceId);
-        }
-      } catch (err) {
-        alert('No se pudo acceder a la cámara.');
-        console.error(err);
+        return devices.filter(device => device.kind === 'videoinput');
+      } catch (error) {
+        console.error('Error al acceder a la cámara:', error);
+        alert('No se pudo acceder a la cámara. Asegurate de dar permisos y que estés usando HTTPS.');
+        return [];
       }
     }
 
-    function startScanner(deviceId) {
-      output.textContent = '';
-      codeReader.reset(); // Detenemos escaneo previo
-
-      codeReader.decodeFromVideoDevice(deviceId, videoElement, (result, err) => {
-        if (result) {
-          output.textContent = result.getText();
+    async function startCamera(deviceId) {
+      try {
+        if (scanning) {
           codeReader.reset();
+          scanning = false;
         }
-      });
+
+        output.textContent = '';
+        await codeReader.decodeFromVideoDevice(deviceId, videoElement, (result, err) => {
+          if (result) {
+            output.textContent = result.getText();
+            codeReader.reset();
+            scanning = false;
+          }
+        });
+
+        scanning = true;
+      } catch (error) {
+        console.error('Error al iniciar el escáner:', error);
+        alert('No se pudo iniciar la cámara seleccionada.');
+      }
     }
 
-    cameraSelect.addEventListener('change', (e) => {
-      currentDeviceId = e.target.value;
-      startScanner(currentDeviceId);
-    });
+    async function init() {
+      const cameras = await getCameras();
 
-    init();
-  </script>
-</body>
-</html>
+      cameraSelect.innerHTML = ''; // limpiar
+      cameras.forEach((cam, i
