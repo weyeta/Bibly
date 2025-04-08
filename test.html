@@ -1,27 +1,43 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Escanear código</title>
-  </head>
-  <body>
-    <h2>Escaneá un código de barras</h2>
-    <video id="preview" width="300" height="200"></video>
-    <p><strong>Resultado:</strong> <span id="output"></span></p>
+<head>
+  <meta charset="UTF-8">
+  <title>Lector de Códigos de Barras</title>
+  <script src="https://unpkg.com/@zxing/browser@latest"></script>
+</head>
+<body>
+  <h1>Escanear Código de Barras</h1>
+  <video id="video" width="300" height="200" style="border: 1px solid gray"></video>
+  <p>Resultado: <span id="result"></span></p>
 
-    <script type="module">
-      import { BrowserMultiFormatReader } from "https://unpkg.com/@zxing/browser@latest";
+  <script>
+    window.addEventListener('load', function () {
+      const codeReader = new ZXing.BrowserMultiFormatReader();
+      const videoElement = document.getElementById('video');
+      const resultElement = document.getElementById('result');
 
-      const codeReader = new BrowserMultiFormatReader();
-      const videoElement = document.getElementById("preview");
-      const output = document.getElementById("output");
+      // Obtener los dispositivos de video disponibles
+      codeReader.listVideoInputDevices()
+        .then((videoInputDevices) => {
+          // Seleccionar el primer dispositivo disponible (puede ajustarse según necesidad)
+          const selectedDeviceId = videoInputDevices[0].deviceId;
 
-      codeReader.decodeFromVideoDevice(null, videoElement, (result, err) => {
-        if (result) {
-          output.textContent = result.getText();
-          codeReader.reset(); // para detener después de primer lectura
-        }
-      });
-    </script>
-  </body>
+          // Iniciar la decodificación desde el dispositivo de video seleccionado
+          codeReader.decodeFromVideoDevice(selectedDeviceId, videoElement, (result, err) => {
+            if (result) {
+              // Mostrar el resultado cuando se detecta un código
+              resultElement.textContent = result.text;
+              console.log(result);
+            }
+            if (err && !(err instanceof ZXing.NotFoundException)) {
+              console.error(err);
+            }
+          });
+        })
+        .catch((err) => {
+          console.error(err);
+        });
+    });
+  </script>
+</body>
 </html>
