@@ -1,42 +1,46 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Lector de Códigos de Barras</title>
-  <script src="https://unpkg.com/@zxing/browser@latest"></script>
+  <meta charset="UTF-8" />
+  <title>Escanear código</title>
 </head>
 <body>
-  <h1>Escanear Código</h1>
-  <video id="video" width="300" height="200" style="border: 1px solid gray"></video>
-  <p>Resultado: <span id="result"></span></p>
+  <h2>Escaneá un código de barras 0.05</h2>
+  <video id="preview" width="300" height="200" autoplay></video>
+  <p><strong>Resultado:</strong> <span id="output"></span></p>
 
-  <script>
-    window.addEventListener('DOMContentLoaded', async () => {
-      const video = document.getElementById('video');
-      const resultText = document.getElementById('result');
+  <script type="module">
+    import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.1/+esm';
 
-      try {
-        const devices = await ZXing.BrowserMultiFormatReader.listVideoInputDevices();
+    const codeReader = new BrowserMultiFormatReader();
 
-        if (devices.length === 0) {
-          alert("No se detectaron cámaras.");
-          return;
-        }
+    const videoElement = document.getElementById('preview');
+    const output = document.getElementById('output');
 
-        const selectedDeviceId = devices[0].deviceId;
-
-        const codeReader = new ZXing.BrowserMultiFormatReader();
-        await codeReader.decodeFromVideoDevice(selectedDeviceId, video, (result, error) => {
-          if (result) {
-            resultText.textContent = result.getText();
-          }
-        });
-
-        console.log("Escaneo iniciado.");
-      } catch (error) {
-        console.error("Error al acceder a la cámara:", error);
-        alert("No se pudo acceder a la cámara. Asegurate de que el navegador tenga permisos.");
+    const constraints = {
+      video: {
+        facingMode: 'environment', // cámara trasera
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        focusMode: 'continuous', // algunos navegadores lo aceptan
+        advanced: [
+          { focusMode: 'continuous' }
+        ]
       }
+    };
+
+    // Solicitamos directamente el stream con constraints
+    navigator.mediaDevices.getUserMedia(constraints).then(stream => {
+      videoElement.srcObject = stream;
+      codeReader.decodeFromVideoElement(videoElement, (result, err) => {
+        if (result) {
+          output.textContent = result.getText();
+          codeReader.reset();
+          stream.getTracks().forEach(track => track.stop()); // apagamos la cámara
+        }
+      });
+    }).catch(err => {
+      console.error('Error accediendo a la cámara:', err);
     });
   </script>
 </body>
