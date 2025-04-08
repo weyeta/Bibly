@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Lista de cámaras</title>
+</head>
+<body>
+  <h2>Cámaras disponibles</h2>
+  <ul id="camera-list"></ul>
+
+  <script>
+    async function listarCamaras() {
+      // Pedir permiso para acceder a la cámara al menos una vez
+      try {
+        await navigator.mediaDevices.getUserMedia({ video: true });
+      } catch (err) {
+        alert("Necesitás permitir el acceso a la cámara para ver la lista.");
+        return;
+      }
+
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter(device => device.kind === 'videoinput');
+      const listElement = document.getElementById('camera-list');
+
+      if (videoDevices.length === 0) {
+        listElement.innerHTML = '<li>No se encontraron cámaras</li>';
+        return;
+      }
+
+      videoDevices.forEach((device, index) => {
+        const li = document.createElement('li');
+        li.textContent = `Cámara ${index + 1}: ${device.label || 'Sin nombre'} — ID: ${device.deviceId}`;
+        listElement.appendChild(li);
+      });
+    }
+
+    listarCamaras();
+  </script>
+</body>
+</html>
