@@ -2,16 +2,53 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Escáner con selección de cámara</title>
+  <title>Escáner de Códigos</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      font-size: 1.5rem;
+      padding: 1rem;
+      background: #f9f9f9;
+    }
+    h2 {
+      font-size: 2rem;
+    }
+    label, select, p {
+      display: block;
+      margin-top: 1.2rem;
+    }
+    select {
+      font-size: 1.3rem;
+      padding: 0.5rem;
+    }
+    video {
+      display: block;
+      margin-top: 1.5rem;
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      background: black;
+    }
+    #output {
+      font-weight: bold;
+      color: green;
+      margin-top: 1rem;
+    }
+    .error {
+      color: red;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
-  <h2>Escaneá un código</h2>
+  <h2>📷 Escaneá un código</h2>
 
   <label for="cameraSelect">Seleccioná la cámara:</label>
   <select id="cameraSelect"></select>
 
-  <video id="preview" width="300" height="200" autoplay></video>
-  <p><strong>Resultado:</strong> <span id="output"></span></p>
+  <video id="preview" autoplay playsinline></video>
+  <p><strong>Resultado:</strong> <span id="output">...</span></p>
+  <p id="errorMsg" class="error"></p>
 
   <script type="module">
     import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.1/+esm';
@@ -20,50 +57,10 @@
     const videoElement = document.getElementById('preview');
     const output = document.getElementById('output');
     const cameraSelect = document.getElementById('cameraSelect');
+    const errorMsg = document.getElementById('errorMsg');
 
-    let currentStream = null;
     let scanning = false;
 
     async function getCameras() {
       try {
-        // Primero pedimos permisos usando una cámara genérica
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        stream.getTracks().forEach(track => track.stop()); // Cerramos la previa
-
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        return devices.filter(device => device.kind === 'videoinput');
-      } catch (error) {
-        console.error('Error al acceder a la cámara:', error);
-        alert('No se pudo acceder a la cámara. Asegurate de dar permisos y que estés usando HTTPS.');
-        return [];
-      }
-    }
-
-    async function startCamera(deviceId) {
-      try {
-        if (scanning) {
-          codeReader.reset();
-          scanning = false;
-        }
-
-        output.textContent = '';
-        await codeReader.decodeFromVideoDevice(deviceId, videoElement, (result, err) => {
-          if (result) {
-            output.textContent = result.getText();
-            codeReader.reset();
-            scanning = false;
-          }
-        });
-
-        scanning = true;
-      } catch (error) {
-        console.error('Error al iniciar el escáner:', error);
-        alert('No se pudo iniciar la cámara seleccionada.');
-      }
-    }
-
-    async function init() {
-      const cameras = await getCameras();
-
-      cameraSelect.innerHTML = ''; // limpiar
-      cameras.forEach((cam, i
+        // Pedimos
