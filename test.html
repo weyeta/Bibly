@@ -63,7 +63,6 @@
 
     async function listCameras() {
       try {
-        // Pedimos permiso primero para obtener los labels
         const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
         tempStream.getTracks().forEach(track => track.stop());
 
@@ -86,18 +85,24 @@
     }
 
     async function startScanner(deviceId) {
-      if (currentDeviceId === deviceId) return; // No reiniciar si es la misma
+      if (currentDeviceId === deviceId) return;
 
       output.textContent = 'Escaneando...';
       errorMsg.textContent = '';
       currentDeviceId = deviceId;
 
+      // Detener escaneo anterior
       try {
-        codeReader.reset();
+        await codeReader.stopContinuousDecode();
+      } catch (e) {
+        console.warn('No había decode activo:', e.message);
+      }
+
+      try {
         await codeReader.decodeFromVideoDevice(deviceId, videoElement, (result, err) => {
           if (result) {
             output.textContent = result.getText();
-            codeReader.reset();
+            codeReader.stopContinuousDecode();
             currentDeviceId = null;
           }
         });
