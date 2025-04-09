@@ -101,4 +101,24 @@
             currentDeviceId = null;
           }
         });
+      } catch (err) {
+        errorMsg.textContent = 'Error al escanear: ' + err.message;
       }
+    }
+
+    cameraSelect.addEventListener('change', () => {
+      const newId = cameraSelect.value;
+      startScanner(newId);
+    });
+
+    (async () => {
+      const cameras = await listCameras();
+      if (cameras.length > 0) {
+        await startScanner(cameras[0].deviceId);
+      } else {
+        errorMsg.textContent = 'No se encontraron cámaras.';
+      }
+    })();
+  </script>
+</body>
+</html>
