@@ -59,8 +59,46 @@
     const cameraSelect = document.getElementById('cameraSelect');
     const errorMsg = document.getElementById('errorMsg');
 
-    let scanning = false;
+    let currentDeviceId = null;
 
-    async function getCameras() {
+    async function listCameras() {
       try {
-        // Pedimos
+        // Pedimos permiso primero para obtener los labels
+        const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        tempStream.getTracks().forEach(track => track.stop());
+
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(d => d.kind === 'videoinput');
+
+        cameraSelect.innerHTML = '';
+        videoDevices.forEach((device, index) => {
+          const option = document.createElement('option');
+          option.value = device.deviceId;
+          option.text = device.label || `Cámara ${index + 1}`;
+          cameraSelect.appendChild(option);
+        });
+
+        return videoDevices;
+      } catch (err) {
+        errorMsg.textContent = 'Error al listar cámaras: ' + err.message;
+        return [];
+      }
+    }
+
+    async function startScanner(deviceId) {
+      if (currentDeviceId === deviceId) return; // No reiniciar si es la misma
+
+      output.textContent = 'Escaneando...';
+      errorMsg.textContent = '';
+      currentDeviceId = deviceId;
+
+      try {
+        codeReader.reset();
+        await codeReader.decodeFromVideoDevice(deviceId, videoElement, (result, err) => {
+          if (result) {
+            output.textContent = result.getText();
+            codeReader.reset();
+            currentDeviceId = null;
+          }
+        });
+      }
