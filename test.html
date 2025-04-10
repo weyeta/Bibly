@@ -6,27 +6,49 @@
   <style>
     body {
       font-family: sans-serif;
-      font-size: 1.2rem;
+      font-size: 1.5rem;
       padding: 1rem;
       background: #f9f9f9;
     }
-    .scanner-container {
+    h2 {
+      font-size: 2rem;
+    }
+    label, select, p {
+      display: block;
+      margin-top: 1.2rem;
+    }
+    select {
+      font-size: 1.3rem;
+      padding: 0.5rem;
+    }
+    #scanner-container {
       position: relative;
+      margin-top: 2rem;
       width: 100%;
+      max-width: 640px;
+      aspect-ratio: 4/3;
+      background: black;
     }
     video {
       width: 100%;
-      height: auto;
-      background: black;
+      height: 100%;
+      object-fit: cover;
     }
     .overlay {
       position: absolute;
-      top: 25%;
-      left: 25%;
-      width: 50%;
-      height: 50%;
-      border: 3px dashed #00cc00;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       pointer-events: none;
+    }
+    .scan-area {
+      position: absolute;
+      top: 25%;
+      left: 15%;
+      width: 70%;
+      height: 50%;
+      border: 4px solid rgba(0, 255, 0, 0.7);
       box-sizing: border-box;
     }
     #output {
@@ -36,9 +58,7 @@
     }
     .error {
       color: red;
-    }
-    canvas {
-      display: none;
+      font-weight: bold;
     }
   </style>
 </head>
@@ -48,36 +68,29 @@
   <label for="cameraSelect">Seleccioná la cámara:</label>
   <select id="cameraSelect"></select>
 
-  <div class="scanner-container">
+  <div id="scanner-container">
     <video id="preview" autoplay playsinline></video>
-    <div class="overlay"></div>
+    <div class="overlay">
+      <div class="scan-area"></div>
+    </div>
   </div>
 
   <p><strong>Resultado:</strong> <span id="output">...</span></p>
   <p id="errorMsg" class="error"></p>
 
-  <canvas id="canvas"></canvas>
+  <script type="module">
+    import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.1/+esm';
 
-  <script src="https://cdn.jsdelivr.net/npm/@zxing/library@latest"></script>
-
-  <script>
-    const codeReader = new ZXing.BrowserMultiFormatReader();
+    const codeReader = new BrowserMultiFormatReader();
     const videoElement = document.getElementById('preview');
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
     const output = document.getElementById('output');
     const cameraSelect = document.getElementById('cameraSelect');
     const errorMsg = document.getElementById('errorMsg');
 
-    let videoStream = null;
-    let decodeInterval = null;
-    let allCameras = [];
+    let currentDeviceId = null;
 
     async function listCameras() {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        stream.getTracks().forEach(track => track.stop());
-
         const devices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = devices.filter(d => d.kind === 'videoinput');
 
@@ -89,7 +102,6 @@
           cameraSelect.appendChild(option);
         });
 
-        allCameras = videoDevices;
         return videoDevices;
       } catch (err) {
         errorMsg.textContent = 'Error al listar cámaras: ' + err.message;
@@ -98,53 +110,40 @@
     }
 
     async function startScanner(deviceId) {
-      if (videoStream) {
-        videoStream.getTracks().forEach(track => track.stop());
-      }
-      if (decodeInterval) {
-        clearInterval(decodeInterval);
-      }
+      if (currentDeviceId === deviceId) return;
+
+      output.textContent = 'Escaneando...';
+      errorMsg.textContent = '';
+      currentDeviceId = deviceId;
 
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { deviceId: { exact: deviceId } }
+        await codeReader.stopContinuousDecode();
+      } catch (e) {}
+
+      try {
+        await codeReader.decodeFromVideoDevice(deviceId, videoElement, (result, err, controls) => {
+          if (result) {
+            output.textContent = result.getText();
+            controls.stop();
+            currentDeviceId = null;
+          }
+        }, {
+          scanRegion: () => {
+            // Calcular región centrada sobre el video (70% ancho, 50% alto)
+            const width = videoElement.videoWidth;
+            const height = videoElement.videoHeight;
+
+            return {
+              x: width * 0.15,
+              y: height * 0.25,
+              width: width * 0.7,
+              height: height * 0.5
+            };
+          }
         });
-        videoElement.srcObject = stream;
-        videoStream = stream;
-
-        videoElement.onloadedmetadata = () => {
-          videoElement.play();
-          setTimeout(startCroppingLoop, 500); // Esperar a que el video esté listo
-        };
       } catch (err) {
-        errorMsg.textContent = 'Error al acceder a la cámara: ' + err.message;
+        errorMsg.textContent = 'Error al escanear: ' + err.message;
       }
-    }
-
-    function startCroppingLoop() {
-      decodeInterval = setInterval(async () => {
-        if (videoElement.videoWidth === 0 || videoElement.videoHeight === 0) return;
-
-        const vw = videoElement.videoWidth;
-        const vh = videoElement.videoHeight;
-        const cropWidth = vw * 0.5;
-        const cropHeight = vh * 0.5;
-        const cropX = (vw - cropWidth) / 2;
-        const cropY = (vh - cropHeight) / 2;
-
-        canvas.width = cropWidth;
-        canvas.height = cropHeight;
-        ctx.drawImage(videoElement, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
-
-        try {
-          const result = await codeReader.decodeFromCanvas(canvas);
-          output.textContent = result.text;
-          clearInterval(decodeInterval);
-          videoStream.getTracks().forEach(track => track.stop());
-        } catch (e) {
-          // sigue escaneando
-        }
-      }, 300);
     }
 
     cameraSelect.addEventListener('change', () => {
@@ -155,6 +154,7 @@
     (async () => {
       const cameras = await listCameras();
       if (cameras.length > 0) {
+        cameraSelect.value = cameras[0].deviceId;
         await startScanner(cameras[0].deviceId);
       } else {
         errorMsg.textContent = 'No se encontraron cámaras.';
