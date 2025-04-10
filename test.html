@@ -6,28 +6,17 @@
   <style>
     body {
       font-family: sans-serif;
-      font-size: 1.5rem;
+      font-size: 1.2rem;
       padding: 1rem;
       background: #f9f9f9;
-    }
-    h2 {
-      font-size: 2rem;
-    }
-    label, select, p {
-      display: block;
-      margin-top: 1.2rem;
-    }
-    select {
-      font-size: 1.3rem;
-      padding: 0.5rem;
     }
     .scanner-container {
       position: relative;
       width: 100%;
-      max-width: 100%;
     }
     video {
       width: 100%;
+      height: auto;
       background: black;
     }
     .overlay {
@@ -37,8 +26,8 @@
       width: 50%;
       height: 50%;
       border: 3px dashed #00cc00;
-      box-sizing: border-box;
       pointer-events: none;
+      box-sizing: border-box;
     }
     #output {
       font-weight: bold;
@@ -47,4 +36,70 @@
     }
     .error {
       color: red;
-      font-weight: bold
+    }
+    canvas {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h2>📷 Escaneá un código</h2>
+
+  <label for="cameraSelect">Seleccioná la cámara:</label>
+  <select id="cameraSelect"></select>
+
+  <div class="scanner-container">
+    <video id="preview" autoplay playsinline></video>
+    <div class="overlay"></div>
+  </div>
+
+  <p><strong>Resultado:</strong> <span id="output">...</span></p>
+  <p id="errorMsg" class="error"></p>
+
+  <canvas id="canvas"></canvas>
+
+  <!-- Agregamos la versión UMD (no ES module) -->
+  <script src="https://cdn.jsdelivr.net/npm/@zxing/library@latest"></script>
+
+  <script>
+    const codeReader = new ZXing.BrowserMultiFormatReader();
+    const videoElement = document.getElementById('preview');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const output = document.getElementById('output');
+    const cameraSelect = document.getElementById('cameraSelect');
+    const errorMsg = document.getElementById('errorMsg');
+
+    let videoStream = null;
+    let decodeInterval = null;
+
+    async function listCameras() {
+      try {
+        const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        tempStream.getTracks().forEach(track => track.stop());
+
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(d => d.kind === 'videoinput');
+
+        cameraSelect.innerHTML = '';
+        videoDevices.forEach((device, index) => {
+          const option = document.createElement('option');
+          option.value = device.deviceId;
+          option.text = device.label || `Cámara ${index + 1}`;
+          cameraSelect.appendChild(option);
+        });
+
+        return videoDevices;
+      } catch (err) {
+        errorMsg.textContent = 'Error al listar cámaras: ' + err.message;
+        return [];
+      }
+    }
+
+    async function startScanner(deviceId) {
+      if (videoStream) {
+        videoStream.getTracks().forEach(track => track.stop());
+      }
+      if (decodeInterval) {
+        clearInterval(decodeInterval);
+      }
