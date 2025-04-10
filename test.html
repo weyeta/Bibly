@@ -154,14 +154,10 @@
     (async () => {
       const cameras = await listCameras();
 
-if (cameras.length > 0) {
-  // Buscar una que diga 'facing back' o tenga '0'
-  const preferred = cameras.find(cam =>
-    cam.label.toLowerCase().includes('back') || cam.label.includes('0')
-  ) || cameras[0];
+      if (cameras.length > 0) {
+        cameraSelect.value = cameras[2].deviceId;
+        await startScanner(cameras[2].deviceId);
 
-  cameraSelect.value = preferred.deviceId;
-  await startScanner(preferred.deviceId);
       } else {
         errorMsg.textContent = 'No se encontraron cámaras.';
       }
