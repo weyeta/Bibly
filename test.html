@@ -77,7 +77,9 @@
 
   <p><strong>Resultado:</strong> <span id="output">...</span></p>
   <p id="errorMsg" class="error"></p>
+  <ul id="codeList"></ul>
 
+  
   <script type="module">
     import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.1/+esm';
 
@@ -123,9 +125,13 @@
       try {
         await codeReader.decodeFromVideoDevice(deviceId, videoElement, (result, err, controls) => {
           if (result) {
-            output.textContent = result.getText();
-            controls.stop();
-            currentDeviceId = null;
+            const text = result.getText();
+            output.textContent = text;
+            agregarACodigoList(text);
+          
+            // Reiniciar escaneo después de medio segundo
+            codeReader.reset();
+            startScanner(currentDeviceId);
           }
         }, {
           scanRegion: () => {
@@ -163,6 +169,18 @@
       }
       
     })();
+
+    const codeList = document.getElementById('codeList');
+    const scannedCodes = new Set();
+    
+    function agregarACodigoList(texto) {
+      if (scannedCodes.has(texto)) return;
+      scannedCodes.add(texto);
+    
+      const li = document.createElement('li');
+      li.textContent = texto;
+      codeList.prepend(li);
+    }
   </script>
 </body>
 </html>
