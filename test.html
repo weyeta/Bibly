@@ -123,24 +123,15 @@
       } catch (e) {}
 
       try {
-        await codeReader.decodeFromVideoDevice(deviceId, videoElement, (result, err) => {
+        await codeReader.decodeFromVideoDevice(deviceId, videoElement, (result, err, controls) => {
           if (result) {
             const text = result.getText();
             output.textContent = text;
             agregarACodigoList(text);
-        
-            codeReader.stopContinuousDecode().then(() => {
-              setTimeout(() => {
-                startScanner(currentDeviceId);
-              }, 500);
-            }).catch(e => {
-              console.warn('Error al detener el escaneo:', e);
-              setTimeout(() => {
-                startScanner(currentDeviceId);
-              }, 500);
-            });
-          }
-        });
+          
+            // Reiniciar escaneo después de medio segundo
+            codeReader.reset();
+            startScanner(currentDeviceId);
           }
         }, {
           scanRegion: () => {
