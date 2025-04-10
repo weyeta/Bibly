@@ -123,21 +123,23 @@
       } catch (e) {}
 
       try {
-        let escaneoActivo = true;
-        
         await codeReader.decodeFromVideoDevice(deviceId, videoElement, (result, err) => {
-          if (!escaneoActivo || !result) return;
+          if (result) {
+            const text = result.getText();
+            output.textContent = text;
+            agregarACodigoList(text);
         
-          escaneoActivo = false;
-        
-          const text = result.getText();
-          output.textContent = text;
-          agregarACodigoList(text);
-        
-          // Rehabilitar escaneo después de 1 segundo
-          setTimeout(() => {
-            escaneoActivo = true;
-          }, 1000);
+            codeReader.stopContinuousDecode().then(() => {
+              setTimeout(() => {
+                startScanner(currentDeviceId);
+              }, 500);
+            }).catch(e => {
+              console.warn('Error al detener el escaneo:', e);
+              setTimeout(() => {
+                startScanner(currentDeviceId);
+              }, 500);
+            });
+          }
         });
           }
         }, {
