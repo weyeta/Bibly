@@ -134,4 +134,32 @@
 
         canvas.width = cropWidth;
         canvas.height = cropHeight;
-        ctx.drawImage(videoElement
+        ctx.drawImage(videoElement, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+
+        try {
+          const result = await codeReader.decodeFromCanvas(canvas);
+          output.textContent = result.text;
+          clearInterval(decodeInterval);
+          videoStream.getTracks().forEach(track => track.stop());
+        } catch (e) {
+          // sigue escaneando
+        }
+      }, 300);
+    }
+
+    cameraSelect.addEventListener('change', () => {
+      const newId = cameraSelect.value;
+      startScanner(newId);
+    });
+
+    (async () => {
+      const cameras = await listCameras();
+      if (cameras.length > 0) {
+        await startScanner(cameras[0].deviceId);
+      } else {
+        errorMsg.textContent = 'No se encontraron cámaras.';
+      }
+    })();
+  </script>
+</body>
+</html>
