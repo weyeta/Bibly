@@ -58,7 +58,6 @@
 
   <canvas id="canvas"></canvas>
 
-  <!-- Agregamos la versión UMD (no ES module) -->
   <script src="https://cdn.jsdelivr.net/npm/@zxing/library@latest"></script>
 
   <script>
@@ -72,11 +71,12 @@
 
     let videoStream = null;
     let decodeInterval = null;
+    let allCameras = [];
 
     async function listCameras() {
       try {
-        const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
-        tempStream.getTracks().forEach(track => track.stop());
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        stream.getTracks().forEach(track => track.stop());
 
         const devices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = devices.filter(d => d.kind === 'videoinput');
@@ -89,6 +89,7 @@
           cameraSelect.appendChild(option);
         });
 
+        allCameras = videoDevices;
         return videoDevices;
       } catch (err) {
         errorMsg.textContent = 'Error al listar cámaras: ' + err.message;
@@ -103,3 +104,34 @@
       if (decodeInterval) {
         clearInterval(decodeInterval);
       }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { deviceId: { exact: deviceId } }
+        });
+        videoElement.srcObject = stream;
+        videoStream = stream;
+
+        videoElement.onloadedmetadata = () => {
+          videoElement.play();
+          setTimeout(startCroppingLoop, 500); // Esperar a que el video esté listo
+        };
+      } catch (err) {
+        errorMsg.textContent = 'Error al acceder a la cámara: ' + err.message;
+      }
+    }
+
+    function startCroppingLoop() {
+      decodeInterval = setInterval(async () => {
+        if (videoElement.videoWidth === 0 || videoElement.videoHeight === 0) return;
+
+        const vw = videoElement.videoWidth;
+        const vh = videoElement.videoHeight;
+        const cropWidth = vw * 0.5;
+        const cropHeight = vh * 0.5;
+        const cropX = (vw - cropWidth) / 2;
+        const cropY = (vh - cropHeight) / 2;
+
+        canvas.width = cropWidth;
+        canvas.height = cropHeight;
+        ctx.drawImage(videoElement
