@@ -129,9 +129,18 @@
             output.textContent = text;
             agregarACodigoList(text);
           
-            // Reiniciar escaneo después de medio segundo
-            codeReader.reset();
-            startScanner(currentDeviceId);
+            // Detener escaneo y reiniciar luego de una pausa
+            codeReader.stopContinuousDecode().then(() => {
+              setTimeout(() => {
+                startScanner(currentDeviceId);
+              }, 500);
+            }).catch(e => {
+              console.warn('Error al detener el escaneo:', e);
+              // Igual intentar reiniciar
+              setTimeout(() => {
+                startScanner(currentDeviceId);
+              }, 500);
+            });
           }
         }, {
           scanRegion: () => {
