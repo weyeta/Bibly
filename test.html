@@ -79,108 +79,92 @@
   <p id="errorMsg" class="error"></p>
   <ul id="codeList"></ul>
 
-  
-  <script type="module">
-    import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.1/+esm';
+<script type="module">
+  import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.1/+esm';
 
-    const codeReader = new BrowserMultiFormatReader();
-    const videoElement = document.getElementById('preview');
-    const output = document.getElementById('output');
-    const cameraSelect = document.getElementById('cameraSelect');
-    const errorMsg = document.getElementById('errorMsg');
+  const codeReader = new BrowserMultiFormatReader();
+  const videoElement = document.getElementById('preview');
+  const output = document.getElementById('output');
+  const cameraSelect = document.getElementById('cameraSelect');
+  const errorMsg = document.getElementById('errorMsg');
 
-    let currentDeviceId = null;
+  let currentDeviceId = null;
 
-    async function listCameras() {
-      try {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const videoDevices = devices.filter(d => d.kind === 'videoinput');
+  async function listCameras() {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter(d => d.kind === 'videoinput');
 
-        cameraSelect.innerHTML = '';
-        videoDevices.forEach((device, index) => {
-          const option = document.createElement('option');
-          option.value = device.deviceId;
-          option.text = device.label || `Cámara ${index + 1}`;
-          cameraSelect.appendChild(option);
-        });
+      cameraSelect.innerHTML = '';
+      videoDevices.forEach((device, index) => {
+        const option = document.createElement('option');
+        option.value = device.deviceId;
+        option.text = device.label || `Cámara ${index + 1}`;
+        cameraSelect.appendChild(option);
+      });
 
-        return videoDevices;
-      } catch (err) {
-        errorMsg.textContent = 'Error al listar cámaras: ' + err.message;
-        return [];
-      }
+      return videoDevices;
+    } catch (err) {
+      errorMsg.textContent = 'Error al listar cámaras: ' + err.message;
+      return [];
     }
+  }
 
-    async function startScanner(deviceId) {
-      if (currentDeviceId === deviceId) return;
+  async function startScanner(deviceId) {
+    if (currentDeviceId === deviceId) return;
 
-      output.textContent = 'Escaneando...';
-      errorMsg.textContent = '';
-      currentDeviceId = deviceId;
+    output.textContent = 'Escaneando...';
+    errorMsg.textContent = '';
+    currentDeviceId = deviceId;
 
-      try {
-        await codeReader.stopContinuousDecode();
-      } catch (e) {}
+    try {
+      await codeReader.stopContinuousDecode();
+    } catch (e) {}
 
-      try {
-        await codeReader.decodeFromVideoDevice(deviceId, videoElement, (result, err, controls) => {
-          if (result) {
-            const text = result.getText();
-            output.textContent = text;
-            agregarACodigoList(text);
-          
-            // Reiniciar escaneo después de medio segundo
-            codeReader.reset();
-            startScanner(currentDeviceId);
-          }
-        }, {
-          scanRegion: () => {
-            // Calcular región centrada sobre el video (70% ancho, 50% alto)
-            const width = videoElement.videoWidth;
-            const height = videoElement.videoHeight;
-
-            return {
-              x: width * 0.20,
-              y: height * 0.30,
-              width: width * 0.6,
-              height: height * 0.4
-            };
-          }
-        });
-      } catch (err) {
-        errorMsg.textContent = 'Error al escanear: ' + err.message;
-      }
+    try {
+      await codeReader.decodeFromVideoDeviceContinuously(deviceId, videoElement, (result, error, controls) => {
+        if (result) {
+          const text = result.getText();
+          output.textContent = text;
+          agregarACodigoList(text);
+        } else if (error && !(error instanceof ZXing.NotFoundException)) {
+          console.warn('Error escaneando:', error);
+        }
+      });
+    } catch (err) {
+      errorMsg.textContent = 'Error al escanear: ' + err.message;
     }
+  }
 
-    cameraSelect.addEventListener('change', () => {
-      const newId = cameraSelect.value;
-      startScanner(newId);
-    });
+  cameraSelect.addEventListener('change', () => {
+    const newId = cameraSelect.value;
+    startScanner(newId);
+  });
 
-    (async () => {
-      const cameras = await listCameras();
-
-      if (cameras.length > 0) {
-        cameraSelect.value = cameras[2].deviceId;
-        await startScanner(cameras[2].deviceId);
-
-      } else {
-        errorMsg.textContent = 'No se encontraron cámaras.';
-      }
-      
-    })();
-
-    const codeList = document.getElementById('codeList');
-    const scannedCodes = new Set();
-    
-    function agregarACodigoList(texto) {
-      if (scannedCodes.has(texto)) return;
-      scannedCodes.add(texto);
-    
-      const li = document.createElement('li');
-      li.textContent = texto;
-      codeList.prepend(li);
+  (async () => {
+    const cameras = await listCameras();
+    if (cameras.length > 0) {
+      cameraSelect.value = cameras[0].deviceId;
+      await startScanner(cameras[0].deviceId);
+    } else {
+      errorMsg.textContent = 'No se encontraron cámaras.';
     }
-  </script>
+  })();
+
+  const codeList = document.getElementById('codeList');
+  const scannedCodes = new Set();
+
+  function agregarACodigoList(texto) {
+    if (scannedCodes.has(texto)) return;
+    scannedCodes.add(texto);
+
+    const li = document.createElement('li');
+    li.textContent = texto;
+    codeList.prepend(li);
+  }
+</script>
+
+ 
+
 </body>
 </html>
