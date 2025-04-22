@@ -127,23 +127,22 @@
 
     const addCodeToList = (code) => {
 
-      const data = dummyData[code];
-      if (!data) {
-        alert("Libro no encontrado");
-        return;
-      }      
-      
+    const libro = await obtenerLibroPorISBN("9780140328721");
+    if (libro) {
+    
       const list = document.getElementById('code-list');
 
       const item = document.createElement('li');
       item.className = "book-item";
       item.innerHTML = `
-        <img src="${data.cover}" alt="Tapa de ${data.title}">
+        <img src="https://covers.openlibrary.org/b/isbn/${data.cover}-S.jpg" alt="Tapa de ${data.title}">
         <div class="book-info">
-          <div><strong>${data.title}</strong></div>
-          <div class="price">$${data.price.toFixed(2)}</div>
+          <div><strong>${libro.title}</strong></div>
+          <div><strong>${libro.author[0]}</strong></div>          
+          <div class="price">$${libro.price.toFixed(2)}</div>
         </div>
       `;
+    }
       
       list.appendChild(item);
 
@@ -165,6 +164,31 @@
       }
       
     };    
+
+    async function obtenerLibroPorISBN(isbn) {
+      const url = `https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`;
+    
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+        const libro = data[`ISBN:${isbn}`];
+    
+        if (!libro) {
+          return null;
+        }
+    
+        return {
+          isbn,
+          titulo: libro.title || "Título desconocido",
+          autor: libro.authors?.[0]?.name || "Autor desconocido",
+          portada: libro.cover?.medium || "https://via.placeholder.com/100x150?text=Sin+imagen"
+        };
+    
+      } catch (error) {
+        alert("Error al obtener el libro:", error);
+        return null;
+      }
+    }
   </script>
 
 </body>
