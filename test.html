@@ -48,6 +48,7 @@
 
   <script type="text/javascript" src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
   <script type="text/javascript">
+    const scannedCodes = new Set();    
     window.addEventListener('load', function () {
       let selectedDeviceId;
       const codeReader = new ZXing.BrowserMultiFormatReader()
@@ -77,6 +78,12 @@
               if (result) {
                 console.log(result)
                 document.getElementById('result').textContent = result.text
+
+                if (!scannedCodes.has(code)) {
+                  scannedCodes.add(code);
+                  addCodeToList(code);
+                }
+                
               }
               if (err && !(err instanceof ZXing.NotFoundException)) {
                 console.error(err)
@@ -97,6 +104,13 @@
           console.error(err)
         })
     })
+
+    const addCodeToList = (code) => {
+      const list = document.getElementById('code-list');
+      const li = document.createElement('li');
+      li.textContent = code;
+      list.appendChild(li);
+    };    
   </script>
 
 </body>
