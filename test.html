@@ -135,10 +135,10 @@
       const item = document.createElement('li');
       item.className = "book-item";
       item.innerHTML = `
-        <img src=${libro.cover} alt="Tapa de ${libro.title}">
+        <img src=${libro.portada} alt="Tapa de ${libro.title}">
         <div class="book-info">
-          <div><strong>${libro.title}</strong></div>
-          <div><strong>${libro.author[0]}</strong></div>          
+          <div><strong>${libro.titulo}</strong></div>
+          <div><strong>${libro.autor}</strong></div>          
           <div class="price">$${libro.price.toFixed(2)}</div>
         </div>
       `;
