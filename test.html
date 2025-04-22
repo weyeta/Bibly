@@ -127,7 +127,7 @@
 
     async function addCodeToList(code) {
 
-    const libro = await obtenerLibroPorISBN("9780140328721");
+    const libro = await obtenerLibroPorISBN(code);
     if (libro) {
     
       const list = document.getElementById('code-list');
