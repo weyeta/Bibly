@@ -130,7 +130,7 @@
     const libro = await obtenerLibroPorISBN(code);
     if (libro) {
     
-      const list = document.getElementById('code-list');
+      const list = document.getElementById('list');
 
       const item = document.createElement('li');
       item.className = "book-item";
@@ -139,9 +139,8 @@
         <div class="book-info">
           <div><strong>${libro.titulo}</strong></div>
           <div><strong>${libro.autor}</strong></div>          
-        </div>
-      `;
-    }
+        </div>`;
+      }
       
       list.appendChild(item);
 
