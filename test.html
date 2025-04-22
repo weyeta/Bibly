@@ -49,6 +49,26 @@
   <script type="text/javascript" src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
   <script type="text/javascript">
     const scannedCodes = new Set();    
+
+    const dummyData = {
+      "9788418797453": {
+        title: "El Principito",
+        price: 3000,
+        cover: "https://covers.openlibrary.org/b/isbn/9788418797453-M.jpg"
+      },
+      "123456789012345678": {
+        title: "test",
+        price: 9999,
+        cover: "https://www.idautomation.com/Assets/ProductImages/dynamic_barcode_generator_shadow.png"
+      },
+      "9788420432120": {
+        title: "Rayuela",
+        price: 5000,
+        cover: "https://covers.openlibrary.org/b/isbn/9788420432120-M.jpg"
+      }
+    };
+
+    
     window.addEventListener('load', function () {
       let selectedDeviceId;
       const codeReader = new ZXing.BrowserMultiFormatReader()
@@ -78,7 +98,7 @@
               if (result) {
                 console.log(result)
                 document.getElementById('result').textContent = result.text
-
+                
                 if (!scannedCodes.has(result.text)) {
                   scannedCodes.add(result.text);
                   addCodeToList(result.text);
@@ -106,10 +126,26 @@
     })
 
     const addCodeToList = (code) => {
+
+      const data = dummyData[code];
+      if (!data) {
+        alert("Libro no encontrado");
+        return;
+      }      
+      
       const list = document.getElementById('code-list');
-      const li = document.createElement('li');
-      li.textContent = code;
-      list.appendChild(li);
+
+      const item = document.createElement('li');
+      item.className = "book-item";
+      item.innerHTML = `
+        <img src="${data.cover}" alt="Tapa de ${data.title}">
+        <div class="book-info">
+          <div><strong>${data.title}</strong></div>
+          <div class="price">$${data.price.toFixed(2)}</div>
+        </div>
+      `;
+      
+      list.appendChild(item);
 
       // Beep
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
