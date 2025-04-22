@@ -125,7 +125,7 @@
         })
     })
 
-    const addCodeToList = (code) => {
+    async function addCodeToList = (code) => {
 
     const libro = await obtenerLibroPorISBN("9780140328721");
     if (libro) {
