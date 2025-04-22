@@ -140,7 +140,7 @@
           <div><strong>${libro.titulo}</strong></div>
           <div><strong>${libro.autor}</strong></div>          
         </div>`;
-      }
+      
       
       list.appendChild(item);
 
@@ -160,7 +160,7 @@
       if (navigator.vibrate) {
         navigator.vibrate(100); // vibra 100ms
       }
-      
+    }
     };    
 
     async function obtenerLibroPorISBN(isbn) {
