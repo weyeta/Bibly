@@ -3,168 +3,114 @@
 <head>
   <meta charset="UTF-8" />
   <title>Escáner de Códigos</title>
+  <script type="module">
+    import {
+      BrowserMultiFormatReader
+    } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.0.10/+esm';
+
+    const codeReader = new BrowserMultiFormatReader();
+    let selectedDeviceId = null;
+    let isScanning = false;
+    const scannedCodes = new Set();
+
+    const startScan = async () => {
+      if (!selectedDeviceId) {
+        const devices = await BrowserMultiFormatReader.listVideoInputDevices();
+        if (devices.length > 0) {
+          selectedDeviceId = devices[0].deviceId;
+        } else {
+          alert('No se encontraron cámaras.');
+          return;
+        }
+      }
+
+      codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
+        if (result) {
+          const code = result.getText();
+          if (!scannedCodes.has(code)) {
+            scannedCodes.add(code);
+            addCodeToList(code);
+          }
+        }
+      });
+    };
+
+    const stopScan = () => {
+      codeReader.reset();
+    };
+
+    const addCodeToList = (code) => {
+      const list = document.getElementById('code-list');
+      const li = document.createElement('li');
+      li.textContent = code;
+      list.appendChild(li);
+    
+      // Beep
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.value = 800;
+      gain.gain.value = 0.2;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.1);
+    
+      // Vibración
+      if (navigator.vibrate) {
+        navigator.vibrate(100); // vibra 100ms
+      }
+    };
+    window.onload = async () => {
+      const toggleButton = document.getElementById('toggle-scan');
+      toggleButton.addEventListener('click', async () => {
+        if (isScanning) {
+          stopScan();
+          toggleButton.textContent = 'Iniciar escaneo';
+        } else {
+          await startScan();
+          toggleButton.textContent = 'Detener escaneo';
+        }
+        isScanning = !isScanning;
+      });
+    };
+  </script>
   <style>
     body {
       font-family: sans-serif;
-      font-size: 1.5rem;
-      padding: 1rem;
-      background: #f9f9f9;
+      text-align: center;
+      margin-top: 20px;
     }
-    h2 {
-      font-size: 2rem;
-    }
-    label, select, p {
-      display: block;
-      margin-top: 1.2rem;
-    }
-    select {
-      font-size: 1.3rem;
-      padding: 0.5rem;
-    }
-    #scanner-container {
-      position: relative;
-      margin-top: 2rem;
+    #video {
       width: 100%;
-      max-width: 640px;
-      aspect-ratio: 4/3;
-      background: black;
+      max-width: 400px;
+      height: auto;
+      border: 1px solid #ccc;
     }
-    video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
+    ul {
+      list-style: none;
+      padding: 0;
+      margin-top: 20px;
     }
-    .overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
+    li {
+      background: #e0ffe0;
+      margin: 4px auto;
+      padding: 8px;
+      max-width: 300px;
+      border-radius: 4px;
     }
-    .scan-area {
-      position: absolute;
-      top: 30%;
-      left: 20%;
-      width: 60%;
-      height: 40%;
-      border: 4px solid rgba(0, 255, 0, 0.7);
-      box-sizing: border-box;
-    }
-    #output {
-      font-weight: bold;
-      color: green;
-      margin-top: 1rem;
-    }
-    .error {
-      color: red;
-      font-weight: bold;
+    button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      font-size: 1em;
     }
   </style>
 </head>
 <body>
-  <h2>📷 Escaneá un código</h2>
-
-  <label for="cameraSelect">Seleccioná la cámara:</label>
-  <select id="cameraSelect"></select>
-
-  <div id="scanner-container">
-    <video id="preview" autoplay playsinline></video>
-    <div class="overlay">
-      <div class="scan-area"></div>
-    </div>
-  </div>
-
-  <p><strong>Resultado:</strong> <span id="output">...</span></p>
-  <p id="errorMsg" class="error"></p>
-  <ul id="codeList"></ul>
-
-<script type="module">
-  import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.1/+esm';
-
-  const codeReader = new BrowserMultiFormatReader();
-  const videoElement = document.getElementById('preview');
-  const output = document.getElementById('output');
-  const cameraSelect = document.getElementById('cameraSelect');
-  const errorMsg = document.getElementById('errorMsg');
-
-  let currentDeviceId = null;
-
-  async function listCameras() {
-    try {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = devices.filter(d => d.kind === 'videoinput');
-
-      cameraSelect.innerHTML = '';
-      videoDevices.forEach((device, index) => {
-        const option = document.createElement('option');
-        option.value = device.deviceId;
-        option.text = device.label || `Cámara ${index + 1}`;
-        cameraSelect.appendChild(option);
-      });
-
-      return videoDevices;
-    } catch (err) {
-      errorMsg.textContent = 'Error al listar cámaras: ' + err.message;
-      return [];
-    }
-  }
-
-  async function startScanner(deviceId) {
-    if (currentDeviceId === deviceId) return;
-
-    output.textContent = 'Escaneando...';
-    errorMsg.textContent = '';
-    currentDeviceId = deviceId;
-
-    try {
-      await codeReader.stopContinuousDecode();
-    } catch (e) {}
-
-    try {
-      await codeReader.decodeFromVideoDeviceContinuously(deviceId, videoElement, (result, error, controls) => {
-        if (result) {
-          const text = result.getText();
-          output.textContent = text;
-          agregarACodigoList(text);
-        } else if (error && !(error instanceof ZXing.NotFoundException)) {
-          console.warn('Error escaneando:', error);
-        }
-      });
-    } catch (err) {
-      errorMsg.textContent = 'Error al escanear: ' + err.message;
-    }
-  }
-
-  cameraSelect.addEventListener('change', () => {
-    const newId = cameraSelect.value;
-    startScanner(newId);
-  });
-
-  (async () => {
-    const cameras = await listCameras();
-    if (cameras.length > 0) {
-      cameraSelect.value = cameras[0].deviceId;
-      await startScanner(cameras[0].deviceId);
-    } else {
-      errorMsg.textContent = 'No se encontraron cámaras.';
-    }
-  })();
-
-  const codeList = document.getElementById('codeList');
-  const scannedCodes = new Set();
-
-  function agregarACodigoList(texto) {
-    if (scannedCodes.has(texto)) return;
-    scannedCodes.add(texto);
-
-    const li = document.createElement('li');
-    li.textContent = texto;
-    codeList.prepend(li);
-  }
-</script>
-
- 
-
+  <video id="video" autoplay muted></video>
+  <br />
+  <button id="toggle-scan">Iniciar escaneo</button>
+  <ul id="code-list"></ul>
 </body>
 </html>
