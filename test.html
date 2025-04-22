@@ -79,9 +79,9 @@
                 console.log(result)
                 document.getElementById('result').textContent = result.text
 
-                if (!scannedCodes.has(code)) {
-                  scannedCodes.add(code);
-                  addCodeToList(code);
+                if (!scannedCodes.has(result)) {
+                  scannedCodes.add(result);
+                  addCodeToList(result);
                 }
                 
               }
