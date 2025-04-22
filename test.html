@@ -29,7 +29,7 @@
       </div>
 
       <div>
-        <video id="video" width="300" height="200" style="border: 1px solid gray"></video>
+        <video id="video" width="200" height="300" style="border: 1px solid gray"></video>
       </div>
 
       <div id="sourceSelectPanel" style="display:none">
@@ -56,7 +56,7 @@
       codeReader.listVideoInputDevices()
         .then((videoInputDevices) => {
           const sourceSelect = document.getElementById('sourceSelect')
-          selectedDeviceId = videoInputDevices[0].deviceId
+          selectedDeviceId = videoInputDevices[2].deviceId
           if (videoInputDevices.length >= 1) {
             videoInputDevices.forEach((element) => {
               const sourceOption = document.createElement('option')
