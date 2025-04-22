@@ -135,7 +135,7 @@
       const item = document.createElement('li');
       item.className = "book-item";
       item.innerHTML = `
-        <img src="https://covers.openlibrary.org/b/isbn/${data.cover}-S.jpg" alt="Tapa de ${data.title}">
+        <img src=${libro.cover} alt="Tapa de ${libro.title}">
         <div class="book-info">
           <div><strong>${libro.title}</strong></div>
           <div><strong>${libro.author[0]}</strong></div>          
@@ -181,7 +181,7 @@
           isbn,
           titulo: libro.title || "Título desconocido",
           autor: libro.authors?.[0]?.name || "Autor desconocido",
-          portada: libro.cover?.medium || "https://via.placeholder.com/100x150?text=Sin+imagen"
+          portada: libro.cover?.small || "https://via.placeholder.com/100x150?text=Sin+imagen"
         };
     
       } catch (error) {
