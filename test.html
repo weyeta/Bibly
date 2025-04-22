@@ -110,6 +110,24 @@
       const li = document.createElement('li');
       li.textContent = code;
       list.appendChild(li);
+
+      // Beep
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.value = 800;
+      gain.gain.value = 0.2;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.1);
+    
+      // Vibración
+      if (navigator.vibrate) {
+        navigator.vibrate(100); // vibra 100ms
+      }
+      
     };    
   </script>
 
