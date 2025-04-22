@@ -1,40 +1,103 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Lista de cámaras</title>
+  <meta charset="UTF-8">
+  <title>Registro de Libros</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 1em;
+    }
+    .book-list {
+      list-style: none;
+      padding: 0;
+    }
+    .book-item {
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid #ccc;
+      padding: 10px 0;
+    }
+    .book-item img {
+      width: 60px;
+      height: auto;
+      margin-right: 10px;
+    }
+    .book-info {
+      flex: 1;
+    }
+    .price {
+      font-weight: bold;
+      color: green;
+    }
+    .total {
+      margin-top: 1em;
+      font-size: 1.2em;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
-  <h2>Cámaras disponibles</h2>
-  <ul id="camera-list"></ul>
+
+  <h1>Libros Escaneados</h1>
+  <input type="text" id="isbnInput" placeholder="Escaneá o ingresá ISBN" />
+  <button onclick="addBook()">Agregar libro</button>
+
+  <ul id="bookList" class="book-list"></ul>
+  <div id="totalPrice" class="total">Total: $0.00</div>
 
   <script>
-    async function listarCamaras() {
-      // Pedir permiso para acceder a la cámara al menos una vez
-      try {
-        await navigator.mediaDevices.getUserMedia({ video: true });
-      } catch (err) {
-        alert("Necesitás permitir el acceso a la cámara para ver la lista.");
+    const dummyData = {
+      "9789877389845": {
+        title: "El Principito",
+        price: 3000,
+        cover: "https://covers.openlibrary.org/b/isbn/9789877389845-M.jpg"
+      },
+      "9788498387089": {
+        title: "1984",
+        price: 4200,
+        cover: "https://covers.openlibrary.org/b/isbn/9788498387089-M.jpg"
+      },
+      "9788420432120": {
+        title: "Rayuela",
+        price: 5000,
+        cover: "https://covers.openlibrary.org/b/isbn/9788420432120-M.jpg"
+      }
+    };
+
+    const scanned = new Set();
+    let total = 0;
+
+    function addBook() {
+      const isbn = document.getElementById('isbnInput').value.trim();
+      if (!isbn || scanned.has(isbn)) return;
+
+      const data = dummyData[isbn];
+      if (!data) {
+        alert("Libro no encontrado");
         return;
       }
 
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = devices.filter(device => device.kind === 'videoinput');
-      const listElement = document.getElementById('camera-list');
+      scanned.add(isbn);
+      const list = document.getElementById('bookList');
 
-      if (videoDevices.length === 0) {
-        listElement.innerHTML = '<li>No se encontraron cámaras</li>';
-        return;
-      }
+      const item = document.createElement('li');
+      item.className = "book-item";
+      item.innerHTML = `
+        <img src="${data.cover}" alt="Tapa de ${data.title}">
+        <div class="book-info">
+          <div><strong>${data.title}</strong></div>
+          <div class="price">$${data.price.toFixed(2)}</div>
+        </div>
+      `;
+      list.appendChild(item);
 
-      videoDevices.forEach((device, index) => {
-        const li = document.createElement('li');
-        li.textContent = `Cámara ${index + 1}: ${device.label || 'Sin nombre'} — ID: ${device.deviceId}`;
-        listElement.appendChild(li);
-      });
+      total += data.price;
+      document.getElementById('totalPrice').textContent = `Total: $${total.toFixed(2)}`;
+
+      document.getElementById('isbnInput').value = '';
     }
-
-    listarCamaras();
   </script>
+
 </body>
 </html>
