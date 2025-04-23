@@ -37,19 +37,19 @@
       margin:0;
       height:100vh;
     }
-    .container{
+    #container{
       display: flex;
       flex-direction: column;
       background: #fafafa;
       height: 100%;
     }
     
-    .video{
+    #video{
       background-color:#3f51b5;
       padding:1%;
       color:white;
     }
-    .list{
+    #list{
       flex:1;
       margin:2%;
       padding:2%;
@@ -57,7 +57,7 @@
       box-shadow:0px 0px 5px black;
       overflow-y: scroll
     }
-    .footer{
+    #footer{
       background-color:#3f51b5;
       padding:1%;
       color:white;
@@ -81,10 +81,10 @@
       </div>
 
       <div>
-        <video id="video" width="200" height="300"></video>
+        <video id="video-container" width="200" height="300"></video>
       </div>
 
-      <div id="sourceSelectPanel" style="display:none">
+      <div id="sourceSelectPanel-container" style="display:none">
         <label for="sourceSelect">Change video source:</label>
         <select id="sourceSelect" style="max-width:400px">
         </select>
